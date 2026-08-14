@@ -1,0 +1,42 @@
+version: '3'
+
+tasks:
+  ghostty:
+    silent: true
+    desc: Opens opencode + opencode for developing
+    cmds:
+      - bash -c 'nohup ghostty --working-directory="{{.USER_WORKING_DIR}}" -e opencode > /dev/null 2>&1 < /dev/null &'
+
+  emulator:
+    silent: true
+    desc: Opens an android emulator
+    cmds:
+      - |
+        bash -lc '
+          set -euo pipefail
+
+          avds=()
+          while IFS= read -r avd; do
+            avds+=("$avd")
+          done < <("$HOME/Library/Android/sdk/emulator/emulator" -list-avds)
+
+          if [ ${#avds[@]} -eq 0 ]; then
+            echo "No Android Virtual Devices available."
+            exit 1
+          fi
+
+          echo "Select AVD:"
+          select avd in "${avds[@]}"; do
+            if [ -n "${avd:-}" ]; then
+              echo "Selected $avd"
+              nohup "$HOME/Library/Android/sdk/emulator/emulator" \
+                -netdelay none \
+                -netspeed full \
+                -avd "$avd" \
+                > /dev/null 2>&1 < /dev/null &
+              break
+            fi
+
+            echo "Invalid selection. Enter a number from the list."
+          done
+        '
