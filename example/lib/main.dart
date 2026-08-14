@@ -43,6 +43,12 @@ class ExampleIndexPage extends StatelessWidget {
         icon: Icons.view_stream_outlined,
         page: const SliverExamplePage(),
       ),
+      _Example(
+        title: 'Large data set',
+        description: '1,000 varied tiles built lazily as you scroll.',
+        icon: Icons.dataset_outlined,
+        page: const LargeDataSetExamplePage(),
+      ),
     ];
 
     return Scaffold(
@@ -64,12 +70,21 @@ class ExampleIndexPage extends StatelessWidget {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final crossAxisCount = constraints.maxWidth >= 700 ? 3 : 1;
+                    if (crossAxisCount == 1) {
+                      return ListView.separated(
+                        itemCount: examples.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 16),
+                        itemBuilder: (context, index) =>
+                            _ExampleTile(example: examples[index]),
+                      );
+                    }
                     return GridView.builder(
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: crossAxisCount,
                         mainAxisSpacing: 16,
                         crossAxisSpacing: 16,
-                        childAspectRatio: crossAxisCount == 1 ? 3.2 : 0.7,
+                        childAspectRatio: 0.7,
                       ),
                       itemCount: examples.length,
                       itemBuilder: (context, index) =>
@@ -109,7 +124,7 @@ class _ExampleTile extends StatelessWidget {
                 size: 32,
                 color: Theme.of(context).colorScheme.primary,
               ),
-              const Spacer(),
+              const SizedBox(height: 24),
               Text(
                 example.title,
                 style: Theme.of(context).textTheme.titleLarge,
@@ -200,6 +215,28 @@ class SliverExamplePage extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class LargeDataSetExamplePage extends StatelessWidget {
+  const LargeDataSetExamplePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return _ExampleScaffold(
+      title: 'Large data set',
+      description:
+          '1,000 items built lazily with short, medium, and tall rows.',
+      child: AlignedGridView.extent(
+        padding: const EdgeInsets.all(20),
+        maxCrossAxisExtent: 240,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        addAutomaticKeepAlives: false,
+        itemCount: 1000,
+        itemBuilder: (context, index) => _SampleCard(card: _largeCardAt(index)),
       ),
     );
   }
@@ -332,3 +369,43 @@ const _sampleCards = [
     color: Color(0xffd9f5f0),
   ),
 ];
+
+_SampleCardData _largeCardAt(int index) {
+  const titles = [
+    'Quick update',
+    'Project note',
+    'Customer feedback',
+    'Release checklist',
+    'Research summary',
+    'Team reminder',
+  ];
+  const icons = [
+    Icons.bolt_outlined,
+    Icons.note_alt_outlined,
+    Icons.forum_outlined,
+    Icons.task_alt_outlined,
+    Icons.science_outlined,
+    Icons.groups_outlined,
+  ];
+  const colors = [
+    Color(0xfffff4cc),
+    Color(0xffdff3e4),
+    Color(0xffdcecff),
+    Color(0xffffe4d6),
+    Color(0xffeee1ff),
+    Color(0xffd9f5f0),
+  ];
+  final description = switch (index % 12) {
+    0 =>
+      'This deliberately detailed entry represents a substantial update with several useful points for reviewers. It makes this row noticeably taller than the surrounding rows.',
+    1 =>
+      'This entry has a little more detail than a short note, but remains more compact than the detailed update nearby.',
+    _ => 'A short piece of information.',
+  };
+  return _SampleCardData(
+    title: '${titles[index % titles.length]} ${index + 1}',
+    description: description,
+    icon: icons[index % icons.length],
+    color: colors[index % colors.length],
+  );
+}

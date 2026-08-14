@@ -9,15 +9,18 @@ class UniformTrack extends MultiChildRenderObjectWidget {
     required this.direction,
     required super.children,
     this.spacing = 0,
+    this.mainAxisSpacing = 0,
     this.mainAxisExtent,
   }) : assert(division > 0),
        assert(spacing >= 0),
+       assert(mainAxisSpacing >= 0),
        assert(mainAxisExtent == null || mainAxisExtent > 0),
        assert(children.length <= division);
 
   final int division;
   final AxisDirection direction;
   final double spacing;
+  final double mainAxisSpacing;
   final double? mainAxisExtent;
 
   @override
@@ -26,6 +29,7 @@ class UniformTrack extends MultiChildRenderObjectWidget {
       division: division,
       direction: direction,
       spacing: spacing,
+      mainAxisSpacing: mainAxisSpacing,
       mainAxisExtent: mainAxisExtent,
     );
   }
@@ -39,6 +43,7 @@ class UniformTrack extends MultiChildRenderObjectWidget {
       ..division = division
       ..direction = direction
       ..spacing = spacing
+      ..mainAxisSpacing = mainAxisSpacing
       ..mainAxisExtent = mainAxisExtent;
   }
 }

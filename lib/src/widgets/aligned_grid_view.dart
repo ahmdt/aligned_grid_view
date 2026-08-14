@@ -28,7 +28,10 @@ class AlignedGridView extends BoxScrollView {
     this.mainAxisSpacing = 0,
     this.crossAxisSpacing = 0,
     this.mainAxisExtent,
-  }) : assert(mainAxisExtent == null || mainAxisExtent > 0);
+    this.mainAxisExtentBuilder,
+  }) : assert(mainAxisExtent == null || mainAxisExtent > 0),
+       assert(mainAxisExtent == null || mainAxisExtentBuilder == null),
+       assert(mainAxisExtentBuilder == null || itemCount != null);
 
   AlignedGridView.count({
     super.key,
@@ -51,6 +54,7 @@ class AlignedGridView extends BoxScrollView {
     this.mainAxisSpacing = 0,
     this.crossAxisSpacing = 0,
     this.mainAxisExtent,
+    this.mainAxisExtentBuilder,
     this.addAutomaticKeepAlives = true,
     this.addRepaintBoundaries = true,
   }) : gridDelegate = SliverSimpleGridDelegateWithFixedCrossAxisCount(
@@ -79,6 +83,7 @@ class AlignedGridView extends BoxScrollView {
     this.mainAxisSpacing = 0,
     this.crossAxisSpacing = 0,
     this.mainAxisExtent,
+    this.mainAxisExtentBuilder,
     this.addAutomaticKeepAlives = true,
     this.addRepaintBoundaries = true,
   }) : gridDelegate = SliverSimpleGridDelegateWithMaxCrossAxisExtent(
@@ -91,10 +96,16 @@ class AlignedGridView extends BoxScrollView {
   final int? itemCount;
   final double mainAxisSpacing;
   final double crossAxisSpacing;
+
   /// The known extent of each row along the scroll axis.
   ///
   /// Supplying this enables a fixed-extent sliver fast path for large lists.
   final double? mainAxisExtent;
+
+  /// Supplies a known extent for each row along the scroll axis.
+  ///
+  /// This requires [itemCount] and cannot be combined with [mainAxisExtent].
+  final AlignedGridMainAxisExtentBuilder? mainAxisExtentBuilder;
   final bool addAutomaticKeepAlives;
   final bool addRepaintBoundaries;
 
@@ -107,6 +118,7 @@ class AlignedGridView extends BoxScrollView {
       mainAxisSpacing: mainAxisSpacing,
       crossAxisSpacing: crossAxisSpacing,
       mainAxisExtent: mainAxisExtent,
+      mainAxisExtentBuilder: mainAxisExtentBuilder,
       addAutomaticKeepAlives: addAutomaticKeepAlives,
       addRepaintBoundaries: addRepaintBoundaries,
     );

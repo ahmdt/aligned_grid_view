@@ -11,12 +11,15 @@ class RenderUniformTrack extends RenderBox
   RenderUniformTrack({
     List<RenderBox>? children,
     double spacing = 0,
+    double mainAxisSpacing = 0,
     this._mainAxisExtent,
     required int division,
     required AxisDirection direction,
   }) : assert(spacing >= 0),
+       assert(mainAxisSpacing >= 0),
        assert(division > 0),
        _spacing = spacing,
+       _mainAxisSpacing = mainAxisSpacing,
        _direction = direction,
        _isHorizontal = axisDirectionToAxis(direction) == Axis.horizontal,
        _isDirectionReversed = axisDirectionIsReversed(direction),
@@ -25,6 +28,7 @@ class RenderUniformTrack extends RenderBox
   }
 
   double _spacing;
+  double _mainAxisSpacing;
   double? _mainAxisExtent;
   AxisDirection _direction;
   bool _isHorizontal;
@@ -43,6 +47,14 @@ class RenderUniformTrack extends RenderBox
     assert(value == null || value > 0);
     if (_mainAxisExtent != value) {
       _mainAxisExtent = value;
+      markNeedsLayout();
+    }
+  }
+
+  set mainAxisSpacing(double value) {
+    assert(value >= 0);
+    if (_mainAxisSpacing != value) {
+      _mainAxisSpacing = value;
       markNeedsLayout();
     }
   }
@@ -85,8 +97,11 @@ class RenderUniformTrack extends RenderBox
   }
 
   Size _computeSize(BoxConstraints constraints, ChildLayouter layoutChild) {
-    final mainAxisExtent = _isHorizontal ? constraints.maxWidth : constraints.maxHeight;
-    final childMainAxisExtent = ((mainAxisExtent + _spacing) / _division) - _spacing;
+    final mainAxisExtent = _isHorizontal
+        ? constraints.maxWidth
+        : constraints.maxHeight;
+    final childMainAxisExtent =
+        ((mainAxisExtent + _spacing) / _division) - _spacing;
     final childConstraints = _isHorizontal
         ? BoxConstraints.tightFor(width: childMainAxisExtent)
         : BoxConstraints.tightFor(height: childMainAxisExtent);
@@ -94,11 +109,17 @@ class RenderUniformTrack extends RenderBox
     var child = firstChild;
     while (child != null) {
       final size = layoutChild(child, childConstraints);
-      maxChildCrossAxisExtent = math.max(maxChildCrossAxisExtent, _isHorizontal ? size.height : size.width);
+      maxChildCrossAxisExtent = math.max(
+        maxChildCrossAxisExtent,
+        _isHorizontal ? size.height : size.width,
+      );
       child = childAfter(child);
     }
+    final trackCrossAxisExtent = maxChildCrossAxisExtent + _mainAxisSpacing;
     return constraints.constrain(
-      _isHorizontal ? Size(mainAxisExtent, maxChildCrossAxisExtent) : Size(maxChildCrossAxisExtent, mainAxisExtent),
+      _isHorizontal
+          ? Size(mainAxisExtent, trackCrossAxisExtent)
+          : Size(trackCrossAxisExtent, mainAxisExtent),
     );
   }
 
@@ -108,18 +129,29 @@ class RenderUniformTrack extends RenderBox
     if (fixedMainAxisExtent != null) {
       size = constraints.biggest;
       final gridMainAxisExtent = _isHorizontal ? size.width : size.height;
-      final childMainAxisExtent = ((gridMainAxisExtent + _spacing) / _division) - _spacing;
+      final childMainAxisExtent =
+          ((gridMainAxisExtent + _spacing) / _division) - _spacing;
       final childConstraints = _isHorizontal
-          ? BoxConstraints.tightFor(width: childMainAxisExtent, height: fixedMainAxisExtent)
-          : BoxConstraints.tightFor(width: fixedMainAxisExtent, height: childMainAxisExtent);
+          ? BoxConstraints.tightFor(
+              width: childMainAxisExtent,
+              height: fixedMainAxisExtent,
+            )
+          : BoxConstraints.tightFor(
+              width: fixedMainAxisExtent,
+              height: childMainAxisExtent,
+            );
       final stride = childMainAxisExtent + _spacing;
       var index = 0;
       var child = firstChild;
       while (child != null) {
         child.layout(childConstraints, parentUsesSize: true);
         final parentData = child.parentData! as UniformTrackParentData;
-        final effectiveIndex = _isDirectionReversed ? _division - index - 1 : index;
-        parentData.offset = _isHorizontal ? Offset(effectiveIndex * stride, 0) : Offset(0, effectiveIndex * stride);
+        final effectiveIndex = _isDirectionReversed
+            ? _division - index - 1
+            : index;
+        parentData.offset = _isHorizontal
+            ? Offset(effectiveIndex * stride, 0)
+            : Offset(0, effectiveIndex * stride);
         index++;
         child = parentData.nextSibling;
       }
@@ -127,12 +159,22 @@ class RenderUniformTrack extends RenderBox
     }
 
     size = _computeSize(constraints, ChildLayoutHelper.layoutChild);
-    final mainAxisExtent = _isHorizontal ? constraints.maxWidth : constraints.maxHeight;
-    final childMainAxisExtent = ((mainAxisExtent + _spacing) / _division) - _spacing;
-    final crossAxisExtent = _isHorizontal ? size.height : size.width;
+    final mainAxisExtent = _isHorizontal
+        ? constraints.maxWidth
+        : constraints.maxHeight;
+    final childMainAxisExtent =
+        ((mainAxisExtent + _spacing) / _division) - _spacing;
+    final crossAxisExtent =
+        (_isHorizontal ? size.height : size.width) - _mainAxisSpacing;
     final childConstraints = _isHorizontal
-        ? BoxConstraints.tightFor(width: childMainAxisExtent, height: crossAxisExtent)
-        : BoxConstraints.tightFor(height: childMainAxisExtent, width: crossAxisExtent);
+        ? BoxConstraints.tightFor(
+            width: childMainAxisExtent,
+            height: crossAxisExtent,
+          )
+        : BoxConstraints.tightFor(
+            height: childMainAxisExtent,
+            width: crossAxisExtent,
+          );
     final stride = childMainAxisExtent + _spacing;
     var index = 0;
     var child = firstChild;
@@ -142,8 +184,12 @@ class RenderUniformTrack extends RenderBox
         child.layout(childConstraints, parentUsesSize: true);
       }
       final parentData = child.parentData! as UniformTrackParentData;
-      final effectiveIndex = _isDirectionReversed ? _division - index - 1 : index;
-      parentData.offset = _isHorizontal ? Offset(effectiveIndex * stride, 0) : Offset(0, effectiveIndex * stride);
+      final effectiveIndex = _isDirectionReversed
+          ? _division - index - 1
+          : index;
+      parentData.offset = _isHorizontal
+          ? Offset(effectiveIndex * stride, 0)
+          : Offset(0, effectiveIndex * stride);
       index++;
       child = parentData.nextSibling;
     }

@@ -41,8 +41,23 @@ AlignedGridView.count(
 
 `mainAxisExtent` must be at least as large as every tile in the row. It is the
 recommended configuration for very large lists that support direct jumps. For
-content-driven row heights, omit it: large `jumpTo` operations are expensive
-because Flutter must determine the heights of intervening rows.
+known but varying row heights, provide `mainAxisExtentBuilder`. Its index is the
+row index, not the item index:
+
+```dart
+AlignedGridView.count(
+  crossAxisCount: 3,
+  mainAxisExtentBuilder: (rowIndex) => rowExtents[rowIndex],
+  mainAxisSpacing: 8,
+  itemCount: items.length,
+  itemBuilder: (context, index) => ItemCard(item: items[index]),
+)
+```
+
+This uses Flutter's varied-extent sliver fast path and requires `itemCount`.
+For content-driven row heights, omit both extent options: large `jumpTo`
+operations are expensive because Flutter must determine the heights of
+intervening rows.
 
 For state-free tiles, consider `addAutomaticKeepAlives: false` to reduce
 memory. Keep `addRepaintBoundaries` enabled for visually complex or frequently

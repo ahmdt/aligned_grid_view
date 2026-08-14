@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:example/main.dart';
@@ -18,5 +19,15 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Longer content'), findsOneWidget);
+  });
+
+  testWidgets('lays out the large data set without overflow', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(414, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(const MaterialApp(home: LargeDataSetExamplePage()));
+
+    expect(find.text('Quick update 1'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }
