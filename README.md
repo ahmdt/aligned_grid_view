@@ -139,6 +139,7 @@ The same row-sizing options are available on every `SliverAlignedGrid`
 constructor. Extents from `mainAxisExtentBuilder` are cached while its callback,
 the item count, and main-axis spacing remain unchanged.
 
+
 ## Options
 
 * `itemBuilder` lazily builds tiles. Supply `itemCount` for finite grids.
