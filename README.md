@@ -2,59 +2,65 @@
 
 [![pub package](https://img.shields.io/pub/v/aligned_grid_view.svg)](https://pub.dev/packages/aligned_grid_view)
 
-Flutter grid widgets that make every tile in a row as tall as that row's
-tallest tile. Use them when a standard `GridView` cannot express
-content-driven, aligned rows.
+Flutter grids whose tiles share the height of the tallest tile in their row.
 
-![Aligned grid with content-driven row heights](assets/example.png)
+<img src="assets/example.png" alt="Aligned grid with content-driven row heights" width="400">
 
 ## Features
 
-* Lazy, scrollable aligned grids with fixed columns or responsive tile widths.
-* `SliverAlignedGrid` for use alongside other slivers in a `CustomScrollView`.
-* Fast paths for fixed or known variable row extents.
-* Configurable main- and cross-axis spacing, keep-alives, and repaint
-  boundaries.
+* Lazy, content-driven rows with equal tile heights.
+* Fixed-column and responsive grid constructors.
+* Sliver variants for `CustomScrollView`.
+* Fast paths for known fixed or variable row extents.
 
-## Installation
+## Getting started
 
 ```sh
 flutter pub add aligned_grid_view
 ```
 
 ```dart
+import 'package:flutter/material.dart';
 import 'package:aligned_grid_view/aligned_grid_view.dart';
 ```
 
-## Basic usage
+## Usage
+
+### Fixed columns
+
+Use `AlignedGridView.count` when the number of columns is known.
 
 ```dart
-AlignedGridView.count(
+final grid = AlignedGridView.count(
   crossAxisCount: 3,
   mainAxisSpacing: 8,
   crossAxisSpacing: 8,
-  itemCount: items.length,
-  itemBuilder: (context, index) => ItemCard(item: items[index]),
-)
+  itemCount: 100,
+  itemBuilder: (context, index) => Text('Item $index'),
+);
 ```
 
-Use `AlignedGridView.extent` when tiles need a maximum cross-axis extent and
-the number of columns should adapt to the available width:
+### Responsive columns
+
+Use `AlignedGridView.extent` to keep tiles below a maximum width while adapting
+the column count to the available space.
 
 ```dart
-AlignedGridView.extent(
-  maxCrossAxisExtent: 220,
+final grid = AlignedGridView.extent(
+  maxCrossAxisExtent: 240,
   mainAxisSpacing: 12,
   crossAxisSpacing: 12,
-  itemCount: items.length,
-  itemBuilder: (context, index) => ItemCard(item: items[index]),
-)
+  itemCount: 100,
+  itemBuilder: (context, index) => Text('Item $index'),
+);
 ```
 
-For a grid within a `CustomScrollView`, use `SliverAlignedGrid`:
+### Slivers
+
+Use `SliverAlignedGrid` with other slivers in a `CustomScrollView`.
 
 ```dart
-CustomScrollView(
+final scrollView = CustomScrollView(
   slivers: [
     const SliverAppBar(title: Text('Catalog')),
     SliverPadding(
@@ -63,73 +69,87 @@ CustomScrollView(
         crossAxisCount: 2,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        itemCount: items.length,
-        itemBuilder: (context, index) => ItemCard(item: items[index]),
+        itemCount: 100,
+        itemBuilder: (context, index) => Text('Item $index'),
       ),
     ),
   ],
-)
+);
 ```
 
-`AlignedGridView.custom` and the default `SliverAlignedGrid` constructor accept
-a `SliverSimpleGridDelegate` when column calculation needs to be fully
-customized.
+## Constructors
 
-## Known row extents
+| Constructor | Use when |
+| --- | --- |
+| `AlignedGridView.count` | The cross-axis tile count is fixed. |
+| `AlignedGridView.extent` | Tiles have a maximum cross-axis extent. |
+| `AlignedGridView.custom` | Column calculation needs a custom `SliverSimpleGridDelegate`. |
+| `SliverAlignedGrid.count` | A fixed column-count grid belongs in a `CustomScrollView`. |
+| `SliverAlignedGrid.extent` | A responsive grid belongs in a `CustomScrollView`. |
+| `SliverAlignedGrid` | A sliver needs a custom `SliverSimpleGridDelegate`. |
 
-When every row has a known height, pass `mainAxisExtent`. This uses direct grid
-geometry, avoids measuring tiles, and resolves distant scroll positions in
-constant time:
+The built-in delegates are
+`SliverSimpleGridDelegateWithFixedCrossAxisCount` and
+`SliverSimpleGridDelegateWithMaxCrossAxisExtent`. Pass either to a `custom` or
+default `SliverAlignedGrid` constructor, or implement `SliverSimpleGridDelegate`
+for custom column calculation.
 
 ```dart
-AlignedGridView.count(
+final grid = AlignedGridView.custom(
+  gridDelegate: const SliverSimpleGridDelegateWithFixedCrossAxisCount(
+    crossAxisCount: 3,
+  ),
+  itemCount: 100,
+  itemBuilder: (context, index) => Text('Item $index'),
+);
+```
+
+## Row sizing
+
+By default, rows are content-driven: every tile is measured and the row uses
+the largest resulting extent. This is the appropriate mode when tile content
+varies naturally.
+
+When every row has a known extent, provide `mainAxisExtent`. It must be at
+least as large as every tile in the row and enables efficient distant jumps.
+
+```dart
+final grid = AlignedGridView.count(
   crossAxisCount: 3,
   mainAxisExtent: 96,
-  mainAxisSpacing: 8,
-  itemCount: items.length,
-  itemBuilder: (context, index) => ItemCard(item: items[index]),
-)
+  itemCount: 100,
+  itemBuilder: (context, index) => Text('Item $index'),
+);
 ```
 
-`mainAxisExtent` must be at least as large as every tile in its row. For known
-but varying row heights, use `mainAxisExtentBuilder`. Its argument is the row
-index, not the item index:
+For known but varying row extents, provide `mainAxisExtentBuilder`. It receives
+a row index, requires `itemCount`, and cannot be combined with
+`mainAxisExtent`.
 
 ```dart
-AlignedGridView.count(
+final grid = AlignedGridView.count(
   crossAxisCount: 3,
-  mainAxisExtentBuilder: (rowIndex) => rowExtents[rowIndex],
-  mainAxisSpacing: 8,
-  itemCount: items.length,
-  itemBuilder: (context, index) => ItemCard(item: items[index]),
-)
+  mainAxisExtentBuilder: (rowIndex) => rowIndex.isEven ? 96 : 144,
+  itemCount: 100,
+  itemBuilder: (context, index) => Text('Item $index'),
+);
 ```
 
-`mainAxisExtentBuilder` requires `itemCount`. Row extents and prefix offsets
-are cached while the builder, item count, and spacing stay unchanged. Previously
-visited offsets use binary search; a first jump to a distant uncached row still
-evaluates the preceding row extents.
+The same row-sizing options are available on every `SliverAlignedGrid`
+constructor. Extents from `mainAxisExtentBuilder` are cached while its callback,
+the item count, and main-axis spacing remain unchanged.
 
-## Performance notes
+## Options
 
-The grid lazily builds visible rows. For finite lists, provide `itemCount` and
-leave `shrinkWrap` disabled when possible. Use a known extent when supporting
-very large data sets or distant programmatic scroll jumps.
+* `itemBuilder` lazily builds tiles. Supply `itemCount` for finite grids.
+* `mainAxisSpacing` and `crossAxisSpacing` control the gaps between tiles.
+* `addAutomaticKeepAlives` and `addRepaintBoundaries` default to `true`.
+* `AlignedGridView` also supports standard `ScrollView` options such as
+  `controller`, `scrollDirection`, `padding`, `physics`, and `shrinkWrap`.
 
-For content-driven row heights, omit both extent options. Large `jumpTo`
-operations remain expensive because the grid must build and measure the
-intervening rows before their offsets are known.
+## Additional information
 
-For state-free tiles, consider `addAutomaticKeepAlives: false` to reduce memory.
-Keep `addRepaintBoundaries` enabled for visually complex or frequently changing
-tiles, and measure before adjusting `cacheExtent`. See
-[benchmark.md](benchmark.md) for benchmark methodology and results.
-
-## Example
-
-The [example app](example) demonstrates fixed-column, responsive, sliver, and
-large-data-set grids.
-
-## License
+See the [example app](example), [API documentation](https://pub.dev/documentation/aligned_grid_view/latest/), and [benchmark notes](benchmark.md).
+Report issues at [GitHub](https://github.com/ahmdt/aligned_grid_view/issues).
 
 This package is licensed under the [MIT License](LICENSE).
