@@ -1,3 +1,6 @@
+// `cacheExtent` keeps the package compatible with its older Flutter lower bound.
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/widgets.dart';
 
 import '../rendering/sliver_simple_grid_delegate.dart';
@@ -31,7 +34,10 @@ class AlignedGridView extends BoxScrollView {
     this.mainAxisExtentBuilder,
   }) : assert(mainAxisExtent == null || mainAxisExtent > 0),
        assert(mainAxisExtent == null || mainAxisExtentBuilder == null),
-       assert(mainAxisExtentBuilder == null || itemCount != null);
+       assert(mainAxisExtentBuilder == null || itemCount != null),
+       assert(itemCount == null || itemCount >= 0),
+       assert(mainAxisSpacing >= 0),
+       assert(crossAxisSpacing >= 0);
 
   AlignedGridView.count({
     super.key,
@@ -57,7 +63,13 @@ class AlignedGridView extends BoxScrollView {
     this.mainAxisExtentBuilder,
     this.addAutomaticKeepAlives = true,
     this.addRepaintBoundaries = true,
-  }) : gridDelegate = SliverSimpleGridDelegateWithFixedCrossAxisCount(
+  }) : assert(mainAxisExtent == null || mainAxisExtent > 0),
+       assert(mainAxisExtent == null || mainAxisExtentBuilder == null),
+       assert(mainAxisExtentBuilder == null || itemCount != null),
+       assert(itemCount == null || itemCount >= 0),
+       assert(mainAxisSpacing >= 0),
+       assert(crossAxisSpacing >= 0),
+       gridDelegate = SliverSimpleGridDelegateWithFixedCrossAxisCount(
          crossAxisCount: crossAxisCount,
        ),
        super(semanticChildCount: semanticChildCount ?? itemCount);
@@ -86,7 +98,13 @@ class AlignedGridView extends BoxScrollView {
     this.mainAxisExtentBuilder,
     this.addAutomaticKeepAlives = true,
     this.addRepaintBoundaries = true,
-  }) : gridDelegate = SliverSimpleGridDelegateWithMaxCrossAxisExtent(
+  }) : assert(mainAxisExtent == null || mainAxisExtent > 0),
+       assert(mainAxisExtent == null || mainAxisExtentBuilder == null),
+       assert(mainAxisExtentBuilder == null || itemCount != null),
+       assert(itemCount == null || itemCount >= 0),
+       assert(mainAxisSpacing >= 0),
+       assert(crossAxisSpacing >= 0),
+       gridDelegate = SliverSimpleGridDelegateWithMaxCrossAxisExtent(
          maxCrossAxisExtent: maxCrossAxisExtent,
        ),
        super(semanticChildCount: semanticChildCount ?? itemCount);
@@ -105,6 +123,8 @@ class AlignedGridView extends BoxScrollView {
   /// Supplies a known extent for each row along the scroll axis.
   ///
   /// This requires [itemCount] and cannot be combined with [mainAxisExtent].
+  /// Extents are cached while this callback's identity remains unchanged, so
+  /// use a new callback when its results change.
   final AlignedGridMainAxisExtentBuilder? mainAxisExtentBuilder;
   final bool addAutomaticKeepAlives;
   final bool addRepaintBoundaries;

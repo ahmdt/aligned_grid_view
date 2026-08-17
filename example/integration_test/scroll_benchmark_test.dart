@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:aligned_grid_view/aligned_grid_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,19 +30,16 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await binding.watchPerformance(
-          () async {
-            for (var i = 0; i < 6; i++) {
-              await tester.fling(
-                find.byKey(const ValueKey('benchmark-scrollable')),
-                const Offset(0, -1000),
-                4000,
-              );
-              await tester.pumpAndSettle();
-            }
-          },
-          reportKey: '${name}_fling',
-        );
+        await binding.watchPerformance(() async {
+          for (var i = 0; i < 6; i++) {
+            await tester.fling(
+              find.byKey(const ValueKey('benchmark-scrollable')),
+              const Offset(0, -1000),
+              4000,
+            );
+            await tester.pumpAndSettle();
+          }
+        }, reportKey: '${name}_fling');
         controller.dispose();
       });
 
@@ -56,15 +55,12 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await binding.watchPerformance(
-          () async {
-            for (final fraction in [0.25, 0.5, 0.9, 0.1]) {
-              controller.jumpTo(controller.position.maxScrollExtent * fraction);
-              await tester.pumpAndSettle();
-            }
-          },
-          reportKey: '${name}_jump',
-        );
+        await binding.watchPerformance(() async {
+          for (final fraction in [0.25, 0.5, 0.9, 0.1]) {
+            controller.jumpTo(controller.position.maxScrollExtent * fraction);
+            await tester.pumpAndSettle();
+          }
+        }, reportKey: '${name}_jump');
         controller.dispose();
       });
     }
@@ -82,15 +78,60 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await binding.watchPerformance(
-      () async {
-        for (final fraction in [0.25, 0.5, 0.9, 0.1]) {
-          controller.jumpTo(controller.position.maxScrollExtent * fraction);
-          await tester.pumpAndSettle();
-        }
-      },
-      reportKey: 'aligned_uniform_fixed_extent_large_jump',
+    await binding.watchPerformance(() async {
+      for (final fraction in [0.25, 0.5, 0.9, 0.1]) {
+        controller.jumpTo(controller.position.maxScrollExtent * fraction);
+        await tester.pumpAndSettle();
+      }
+    }, reportKey: 'aligned_uniform_fixed_extent_large_jump');
+    controller.dispose();
+  });
+
+  testWidgets('aligned_known_varied fling', (tester) async {
+    final controller = ScrollController();
+    await tester.pumpWidget(
+      _BenchmarkApp(
+        implementation: _Implementation.aligned,
+        heights: _Heights.varied,
+        controller: controller,
+        itemCount: _scrollItemCount,
+        useKnownVariedExtents: true,
+      ),
     );
+    await tester.pumpAndSettle();
+
+    await binding.watchPerformance(() async {
+      for (var i = 0; i < 6; i++) {
+        await tester.fling(
+          find.byKey(const ValueKey('benchmark-scrollable')),
+          const Offset(0, -1000),
+          4000,
+        );
+        await tester.pumpAndSettle();
+      }
+    }, reportKey: 'aligned_known_varied_fling');
+    controller.dispose();
+  });
+
+  testWidgets('aligned_known_varied large jump', (tester) async {
+    final controller = ScrollController();
+    await tester.pumpWidget(
+      _BenchmarkApp(
+        implementation: _Implementation.aligned,
+        heights: _Heights.varied,
+        controller: controller,
+        itemCount: _scrollItemCount,
+        useKnownVariedExtents: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await binding.watchPerformance(() async {
+      for (final fraction in [0.25, 0.5, 0.9, 0.1]) {
+        controller.jumpTo(controller.position.maxScrollExtent * fraction);
+        await tester.pumpAndSettle();
+      }
+    }, reportKey: 'aligned_known_varied_large_jump');
     controller.dispose();
   });
 }
@@ -105,19 +146,23 @@ class _BenchmarkApp extends StatelessWidget {
     required this.heights,
     required this.controller,
     required this.itemCount,
+    this.useKnownVariedExtents = false,
   });
 
   final _Implementation implementation;
   final _Heights heights;
   final ScrollController controller;
   final int itemCount;
+  final bool useKnownVariedExtents;
 
   @override
   Widget build(BuildContext context) {
-    final itemBuilder = (BuildContext context, int index) => SizedBox(
-      height: _heightFor(index, heights),
-      child: const ColoredBox(color: Color(0xff336699)),
-    );
+    Widget itemBuilder(BuildContext context, int index) {
+      return SizedBox(
+        height: _heightFor(index, heights),
+        child: const ColoredBox(color: Color(0xff336699)),
+      );
+    }
 
     return MaterialApp(
       home: Scaffold(
@@ -130,6 +175,9 @@ class _BenchmarkApp extends StatelessWidget {
                 mainAxisSpacing: _mainAxisSpacing,
                 crossAxisSpacing: _crossAxisSpacing,
                 mainAxisExtent: heights == _Heights.uniform ? 96 : null,
+                mainAxisExtentBuilder: useKnownVariedExtents
+                    ? _knownVariedRowExtent
+                    : null,
                 itemBuilder: itemBuilder,
               )
             : _IntrinsicRowGrid(
@@ -198,4 +246,16 @@ double _heightFor(int index, _Heights heights) {
     3 => 192,
     _ => 272,
   };
+}
+
+double _knownVariedRowExtent(int rowIndex) {
+  final firstItemIndex = rowIndex * _crossAxisCount;
+  var extent = 0.0;
+  for (var column = 0; column < _crossAxisCount; column++) {
+    extent = math.max(
+      extent,
+      _heightFor(firstItemIndex + column, _Heights.varied),
+    );
+  }
+  return extent;
 }

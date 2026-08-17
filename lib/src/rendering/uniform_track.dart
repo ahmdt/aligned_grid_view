@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/rendering.dart';
 
 class UniformTrackParentData extends ContainerBoxParentData<RenderBox> {}
@@ -12,7 +10,6 @@ class RenderUniformTrack extends RenderBox
     List<RenderBox>? children,
     double spacing = 0,
     double mainAxisSpacing = 0,
-    this._mainAxisExtent,
     required int division,
     required AxisDirection direction,
   }) : assert(spacing >= 0),
@@ -29,7 +26,6 @@ class RenderUniformTrack extends RenderBox
 
   double _spacing;
   double _mainAxisSpacing;
-  double? _mainAxisExtent;
   AxisDirection _direction;
   bool _isHorizontal;
   bool _isDirectionReversed;
@@ -39,14 +35,6 @@ class RenderUniformTrack extends RenderBox
     assert(value >= 0);
     if (_spacing != value) {
       _spacing = value;
-      markNeedsLayout();
-    }
-  }
-
-  set mainAxisExtent(double? value) {
-    assert(value == null || value > 0);
-    if (_mainAxisExtent != value) {
-      _mainAxisExtent = value;
       markNeedsLayout();
     }
   }
@@ -90,9 +78,6 @@ class RenderUniformTrack extends RenderBox
 
   @override
   Size computeDryLayout(BoxConstraints constraints) {
-    if (_mainAxisExtent != null) {
-      return constraints.biggest;
-    }
     return _computeSize(constraints, ChildLayoutHelper.dryLayoutChild);
   }
 
@@ -109,11 +94,12 @@ class RenderUniformTrack extends RenderBox
     var child = firstChild;
     while (child != null) {
       final size = layoutChild(child, childConstraints);
-      maxChildCrossAxisExtent = math.max(
-        maxChildCrossAxisExtent,
-        _isHorizontal ? size.height : size.width,
-      );
-      child = childAfter(child);
+      final childCrossAxisExtent = _isHorizontal ? size.height : size.width;
+      if (childCrossAxisExtent > maxChildCrossAxisExtent) {
+        maxChildCrossAxisExtent = childCrossAxisExtent;
+      }
+      final parentData = child.parentData! as UniformTrackParentData;
+      child = parentData.nextSibling;
     }
     final trackCrossAxisExtent = maxChildCrossAxisExtent + _mainAxisSpacing;
     return constraints.constrain(
@@ -125,39 +111,6 @@ class RenderUniformTrack extends RenderBox
 
   @override
   void performLayout() {
-    final fixedMainAxisExtent = _mainAxisExtent;
-    if (fixedMainAxisExtent != null) {
-      size = constraints.biggest;
-      final gridMainAxisExtent = _isHorizontal ? size.width : size.height;
-      final childMainAxisExtent =
-          ((gridMainAxisExtent + _spacing) / _division) - _spacing;
-      final childConstraints = _isHorizontal
-          ? BoxConstraints.tightFor(
-              width: childMainAxisExtent,
-              height: fixedMainAxisExtent,
-            )
-          : BoxConstraints.tightFor(
-              width: fixedMainAxisExtent,
-              height: childMainAxisExtent,
-            );
-      final stride = childMainAxisExtent + _spacing;
-      var index = 0;
-      var child = firstChild;
-      while (child != null) {
-        child.layout(childConstraints, parentUsesSize: true);
-        final parentData = child.parentData! as UniformTrackParentData;
-        final effectiveIndex = _isDirectionReversed
-            ? _division - index - 1
-            : index;
-        parentData.offset = _isHorizontal
-            ? Offset(effectiveIndex * stride, 0)
-            : Offset(0, effectiveIndex * stride);
-        index++;
-        child = parentData.nextSibling;
-      }
-      return;
-    }
-
     size = _computeSize(constraints, ChildLayoutHelper.layoutChild);
     final mainAxisExtent = _isHorizontal
         ? constraints.maxWidth
@@ -176,7 +129,8 @@ class RenderUniformTrack extends RenderBox
             width: crossAxisExtent,
           );
     final stride = childMainAxisExtent + _spacing;
-    var index = 0;
+    var childOffset = _isDirectionReversed ? (_division - 1) * stride : 0.0;
+    final offsetDelta = _isDirectionReversed ? -stride : stride;
     var child = firstChild;
     while (child != null) {
       final childExtent = _isHorizontal ? child.size.height : child.size.width;
@@ -184,13 +138,10 @@ class RenderUniformTrack extends RenderBox
         child.layout(childConstraints, parentUsesSize: true);
       }
       final parentData = child.parentData! as UniformTrackParentData;
-      final effectiveIndex = _isDirectionReversed
-          ? _division - index - 1
-          : index;
       parentData.offset = _isHorizontal
-          ? Offset(effectiveIndex * stride, 0)
-          : Offset(0, effectiveIndex * stride);
-      index++;
+          ? Offset(childOffset, 0)
+          : Offset(0, childOffset);
+      childOffset += offsetDelta;
       child = parentData.nextSibling;
     }
   }

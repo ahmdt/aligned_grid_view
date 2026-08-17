@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/rendering.dart';
 
 /// Defines the number of tiles in the cross axis of an aligned grid.
@@ -48,9 +50,11 @@ class SliverSimpleGridDelegateWithMaxCrossAxisExtent
     SliverConstraints constraints,
     double crossAxisSpacing,
   ) {
-    return (constraints.crossAxisExtent /
-            (maxCrossAxisExtent + crossAxisSpacing))
-        .ceil();
+    return math.max(
+      1,
+      (constraints.crossAxisExtent / (maxCrossAxisExtent + crossAxisSpacing))
+          .ceil(),
+    );
   }
 
   @override

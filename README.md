@@ -24,10 +24,9 @@ Use `SliverAlignedGrid.count` in a `CustomScrollView`. The `extent` and
 through a one-million-item list remained within the UI frame budget on a Moto
 G30 profile build.
 
-When every row has a known height, provide `mainAxisExtent`. This uses a
-fixed-extent sliver, avoids measuring each tile to determine its row height,
-and allows distant scroll positions to be resolved without walking all
-intervening rows:
+When every row has a known height, provide `mainAxisExtent`. This uses direct
+fixed grid geometry, avoids row wrapper render objects and tile measurement,
+and allows distant scroll positions to be resolved in constant time:
 
 ```dart
 AlignedGridView.count(
@@ -54,10 +53,15 @@ AlignedGridView.count(
 )
 ```
 
-This uses Flutter's varied-extent sliver fast path and requires `itemCount`.
-For content-driven row heights, omit both extent options: large `jumpTo`
-operations are expensive because Flutter must determine the heights of
-intervening rows.
+This uses a persistent prefix-offset cache and requires `itemCount`. Each row
+extent is requested at most once while the extent builder, item count, and
+spacing remain unchanged. Previously visited offsets use binary search;
+reaching a not-yet-cached distant row still requires evaluating the preceding
+row extents once.
+
+For content-driven row heights, omit both extent options. Large `jumpTo`
+operations remain expensive because the grid must build and measure the
+intervening rows before their offsets are known.
 
 For state-free tiles, consider `addAutomaticKeepAlives: false` to reduce
 memory. Keep `addRepaintBoundaries` enabled for visually complex or frequently

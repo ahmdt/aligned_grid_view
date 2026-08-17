@@ -13,6 +13,8 @@ reports:
 * Direct jumps to 25%, 50%, 90%, and back to 10% across 10,000 items.
 * The same jump sequence across one million uniform-height items using
   `mainAxisExtent`.
+* Fling and jump scenarios across one million varied-height items using
+  `mainAxisExtentBuilder` and its persistent prefix-offset cache.
 
 Run it on the connected Moto G30 in profile mode:
 
@@ -52,6 +54,11 @@ Use the `aligned_uniform_fixed_extent_large_jump` report to validate the
 one-million-item jump fast path. It is intentionally limited to uniform rows;
 variable, content-driven row heights still use `SliverList`.
 
+Use `aligned_known_varied_fling` and `aligned_known_varied_large_jump` to
+validate the known variable-height path. Its first forward jump evaluates and
+caches previously unseen row extents. Later layouts and backward or repeated
+jumps reuse those extents and locate rows with binary search.
+
 ## Previous Moto G30 Result
 
 One profile run on Android 12 produced the following UI build times in
@@ -77,6 +84,24 @@ After enabling `mainAxisExtent`, the four direct jumps across one million
 uniform-height items completed without a heap error. UI build time was 6.30 ms
 on average, 10.75 ms at P90, and 11.15 ms at P99; no UI or raster frame budget
 was missed. The run recorded two new-generation and two old-generation GCs.
+
+## RatPhone17 Known-Extent Result
+
+After moving known fixed and variable row extents to direct grid geometry, the
+one-million-item scenarios were repeated three times on an iPhone 17
+(`iPhone18,3`, iOS 26.6). The table contains the median profile result. The
+fling captured 335 frames and each jump sequence captured seven frames.
+
+| Scenario | UI avg / P90 / P99 / worst (ms) | New / old GC |
+| --- | --- | --- |
+| Fixed-extent large jump | 1.710 / 3.005 / 3.123 / 3.123 | 0 / 0 |
+| Known varied-extent fling | 0.436 / 0.654 / 0.836 / 0.977 | 12 / 0 |
+| Known varied-extent large jump | 0.856 / 1.443 / 1.588 / 1.588 | 0 / 0 |
+
+No run missed a UI or raster frame budget. The known varied-extent jump
+includes forward jumps that extend the prefix-offset cache and backward jumps
+that reuse it. Peak heap was not captured by the integration timing report and
+must still be measured separately with DevTools Memory.
 
 ## RatPhone17 Large Data Set Result
 
