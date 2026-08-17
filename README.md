@@ -1,8 +1,32 @@
 # aligned_grid_view
 
-Flutter grids that align every tile in a row to the row's largest main-axis extent.
+[![pub package](https://img.shields.io/pub/v/aligned_grid_view.svg)](https://pub.dev/packages/aligned_grid_view)
 
-## Usage
+Flutter grid widgets that make every tile in a row as tall as that row's
+tallest tile. Use them when a standard `GridView` cannot express
+content-driven, aligned rows.
+
+![Aligned grid with content-driven row heights](assets/example.png)
+
+## Features
+
+* Lazy, scrollable aligned grids with fixed columns or responsive tile widths.
+* `SliverAlignedGrid` for use alongside other slivers in a `CustomScrollView`.
+* Fast paths for fixed or known variable row extents.
+* Configurable main- and cross-axis spacing, keep-alives, and repaint
+  boundaries.
+
+## Installation
+
+```sh
+flutter pub add aligned_grid_view
+```
+
+```dart
+import 'package:aligned_grid_view/aligned_grid_view.dart';
+```
+
+## Basic usage
 
 ```dart
 AlignedGridView.count(
@@ -14,19 +38,48 @@ AlignedGridView.count(
 )
 ```
 
-Use `SliverAlignedGrid.count` in a `CustomScrollView`. The `extent` and
-`custom` constructors support responsive or application-defined column counts.
+Use `AlignedGridView.extent` when tiles need a maximum cross-axis extent and
+the number of columns should adapt to the available width:
 
-## Performance
+```dart
+AlignedGridView.extent(
+  maxCrossAxisExtent: 220,
+  mainAxisSpacing: 12,
+  crossAxisSpacing: 12,
+  itemCount: items.length,
+  itemBuilder: (context, index) => ItemCard(item: items[index]),
+)
+```
 
-`AlignedGridView` lazily builds only visible rows, so always provide an
-`itemCount` for finite lists and leave `shrinkWrap` disabled. Normal flings
-through a one-million-item list remained within the UI frame budget on a Moto
-G30 profile build.
+For a grid within a `CustomScrollView`, use `SliverAlignedGrid`:
 
-When every row has a known height, provide `mainAxisExtent`. This uses direct
-fixed grid geometry, avoids row wrapper render objects and tile measurement,
-and allows distant scroll positions to be resolved in constant time:
+```dart
+CustomScrollView(
+  slivers: [
+    const SliverAppBar(title: Text('Catalog')),
+    SliverPadding(
+      padding: const EdgeInsets.all(16),
+      sliver: SliverAlignedGrid.count(
+        crossAxisCount: 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        itemCount: items.length,
+        itemBuilder: (context, index) => ItemCard(item: items[index]),
+      ),
+    ),
+  ],
+)
+```
+
+`AlignedGridView.custom` and the default `SliverAlignedGrid` constructor accept
+a `SliverSimpleGridDelegate` when column calculation needs to be fully
+customized.
+
+## Known row extents
+
+When every row has a known height, pass `mainAxisExtent`. This uses direct grid
+geometry, avoids measuring tiles, and resolves distant scroll positions in
+constant time:
 
 ```dart
 AlignedGridView.count(
@@ -38,10 +91,9 @@ AlignedGridView.count(
 )
 ```
 
-`mainAxisExtent` must be at least as large as every tile in the row. It is the
-recommended configuration for very large lists that support direct jumps. For
-known but varying row heights, provide `mainAxisExtentBuilder`. Its index is the
-row index, not the item index:
+`mainAxisExtent` must be at least as large as every tile in its row. For known
+but varying row heights, use `mainAxisExtentBuilder`. Its argument is the row
+index, not the item index:
 
 ```dart
 AlignedGridView.count(
@@ -53,18 +105,31 @@ AlignedGridView.count(
 )
 ```
 
-This uses a persistent prefix-offset cache and requires `itemCount`. Each row
-extent is requested at most once while the extent builder, item count, and
-spacing remain unchanged. Previously visited offsets use binary search;
-reaching a not-yet-cached distant row still requires evaluating the preceding
-row extents once.
+`mainAxisExtentBuilder` requires `itemCount`. Row extents and prefix offsets
+are cached while the builder, item count, and spacing stay unchanged. Previously
+visited offsets use binary search; a first jump to a distant uncached row still
+evaluates the preceding row extents.
+
+## Performance notes
+
+The grid lazily builds visible rows. For finite lists, provide `itemCount` and
+leave `shrinkWrap` disabled when possible. Use a known extent when supporting
+very large data sets or distant programmatic scroll jumps.
 
 For content-driven row heights, omit both extent options. Large `jumpTo`
 operations remain expensive because the grid must build and measure the
 intervening rows before their offsets are known.
 
-For state-free tiles, consider `addAutomaticKeepAlives: false` to reduce
-memory. Keep `addRepaintBoundaries` enabled for visually complex or frequently
-changing tiles; benchmark both settings for simple, static tiles. Adjust
-`cacheExtent` only after measuring: a larger value can smooth fast flings but
-uses more memory.
+For state-free tiles, consider `addAutomaticKeepAlives: false` to reduce memory.
+Keep `addRepaintBoundaries` enabled for visually complex or frequently changing
+tiles, and measure before adjusting `cacheExtent`. See
+[benchmark.md](benchmark.md) for benchmark methodology and results.
+
+## Example
+
+The [example app](example) demonstrates fixed-column, responsive, sliver, and
+large-data-set grids.
+
+## License
+
+This package is licensed under the [MIT License](LICENSE).
