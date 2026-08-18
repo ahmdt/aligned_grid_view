@@ -150,7 +150,7 @@ the item count, and main-axis spacing remain unchanged.
 
 ## Additional information
 
-See the [example app](example), [API documentation](https://pub.dev/documentation/aligned_grid_view/latest/), and [benchmark notes](benchmark.md).
+See the [example app](https://github.com/ahmdt/aligned_grid_view/tree/main/example), [API documentation](https://pub.dev/documentation/aligned_grid_view/latest/), and [benchmark notes](https://github.com/ahmdt/aligned_grid_view/blob/main/benchmark.md).
 Report issues at [GitHub](https://github.com/ahmdt/aligned_grid_view/issues).
 
 This package is licensed under the [MIT License](LICENSE).

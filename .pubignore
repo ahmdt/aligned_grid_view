@@ -1,0 +1,21 @@
+# Generated and local tooling
+/.codegraph/
+/.dart_tool/
+/.idea/
+/build/
+/coverage/
+**/doc/api/
+*.iml
+*.log
+*.swp
+.DS_Store
+
+# Package development
+/AGENTS.md
+/Taskfile.yaml
+/analysis_options.yaml
+/benchmark.md
+/example/
+/test/
+/pubspec.lock
+/.metadata

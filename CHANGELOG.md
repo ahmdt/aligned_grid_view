@@ -1,3 +1,8 @@
+## 0.1.1
+
+* Exclude development files and the example app from the published package.
+* Link to the example app and benchmark notes in the repository.
+
 ## 0.1.0
 
 * Add `mainAxisExtentBuilder` for known, variable row extents.

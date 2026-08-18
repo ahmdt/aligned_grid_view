@@ -1,6 +1,6 @@
 name: aligned_grid_view
 description: Aligned grid widgets for Flutter that size every tile in a row equally.
-version: 0.1.0
+version: 0.1.1
 homepage: https://github.com/ahmdt/aligned_grid_view
 repository: https://github.com/ahmdt/aligned_grid_view
 issue_tracker: https://github.com/ahmdt/aligned_grid_view/issues
